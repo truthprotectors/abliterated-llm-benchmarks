@@ -138,3 +138,9 @@ Other findings in the table: 1-bit and 2-bit giant MoEs (Kimi K3 Q1_0 at 2.3 tok
 ```
 
 Corrections and new results welcome — open an issue or PR. Model names, quant labels and uploaders are as published on Hugging Face; we are not affiliated with any model vendor.
+
+## More from truthprotectors
+
+- **[TC Mini](https://github.com/truthprotectors/TC-Mini)** — private AI that runs entirely on your phone or PC (WebGPU in the browser, or Ollama / LM Studio). [Open it now](https://truthprotectors.github.io/TC-Mini/app/) · [weights](https://huggingface.co/truthcoder/TC-Mini)
+- **[Abliterated LLM Benchmarks](https://github.com/truthprotectors/abliterated-llm-benchmarks)** — 74 open-weight models and quants on SWE-bench Verified, refusals and speed · [dataset](https://huggingface.co/datasets/truthcoder/abliterated-llm-benchmarks)
+- **[Claude-clone UI/UX](https://github.com/truthprotectors/Claude-clone-UI-UX)** — open-source Claude-style chat UI for AI coding agents
