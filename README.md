@@ -1,10 +1,10 @@
-# Abliterated & Uncensored LLM Coding Benchmarks — 74 models and quants, tested on real hardware
+# Abliterated & Uncensored LLM Coding Benchmarks — 102 models and quants, tested on real hardware
 
 **SWE-bench Verified · refusal rate · tokens/sec · HumanEval · LiveCodeBench — abliterated, heretic and uncensored open-weight models (Kimi K2.7, Kimi K3, GLM-5.3-Flash, MiMo-V2.6-Flash, DeepSeek-V4.1-Flash, Qwen3.8, Qwen3-Coder-Next, Qwen3-Coder-480B, Ripple-65B, …) next to Claude, Codex and Kimi CLIs.**
 
 Almost nobody publishes how *abliterated* models actually code, how much quantization costs them, or whether "uncensored" builds really stop refusing. We ran them — on Mac Studio M3 Ultra 512 GB, RTX PRO 6000 96 GB, A100 and V100 servers — and are publishing every result, including the failures: broken quants, models that still refuse, runs that died. Blank cell = not measured (never guessed).
 
-- **74 rows**, one per model + quant + build actually run (Sept–Nov 2026)
+- **102 rows**, one per model + quant + build actually run (Sept–Nov 2026)
 - Files: [`models.csv`](models.csv) · [`models.json`](models.json) · full table below
 - License: **CC BY 4.0** — use it, cite it.
 
@@ -14,8 +14,11 @@ Almost nobody publishes how *abliterated* models actually code, how much quantiz
 
 | Model (quant) | Solved /100 |
 |---|---|
+| Qwen3.8-Flash-Next **abliterated v2** (Huihui), Q8_0, 188 GB, Mac Studio (speed-optimized bit-exact llama.cpp build) | **82** |
 | Kimi K2.7 Code **abliterated** (Huihui), UD-Q2_K_XL 2-bit, 316 GB, Mac Studio | **81** (71 single pass + 10 on one retry of failures) |
 | GLM-5.3-Flash **abliterated** (Huihui), UD-Q6_K_XL, 292 GB, Mac Studio | **80** (79 first pass + 1 on a 262k-context re-run) |
+| DeepSeek-V4.1-Flash **abliterated** (apetersson), MLX, 394 GB, Mac Studio | **80** |
+| Qwen3.8-Flash-Next **abliterated v2**, MLX mixed 4/8-bit (bydlosoft), 109 GB, 4 Mac Studios | **80** (same answer as the Q8 run on 94/100 bugs; temp 0.8 sampling) |
 | Kimi K2.7 Code (unsloth, not abliterated), UD-IQ1_M 1-bit | 68 |
 | MiMo-V2.6-Flash-MOPD **heretic**, i1-Q4_K_M | 66 |
 | Qwen3.8-27B **abliterated** (Huihui) | 63 |
@@ -28,6 +31,37 @@ Almost nobody publishes how *abliterated* models actually code, how much quantiz
 Claude Fable 5.2 **93** · Claude Opus 5.5 **92** · Claude Opus 5 **92** · Kimi K3 CLI **91** · Codex gpt-6-astra **83** · Claude Sonnet 5.5 **80** · Claude Opus 4.8 **79**
 
 Other findings in the table: 1-bit and 2-bit giant MoEs (Kimi K3 Q1_0 at 2.3 tok/s, REAP576 IQ2 at ~3 tok/s on a 512 GB Mac) · a "heretic" MiMo that hits 0/8 refusals while the "Yamz-Uncensored" build of the same checkpoint still refuses 1/8 · an "abliterated" Kimi bake that refuses everything · DeepSeek-V4.1-Flash abliterated losing to MiMo on 213 coding tasks (McNemar p=0.007) · context-window starvation silently turning into "wrong answers" on SWE-bench.
+
+## Speed screen: every quant of a Nov 2026 abliterated-model collection
+
+Every quant we hold of six abliterated/uncensored families, measured the same way: `llama-bench -p 2048 -n 128 -d 0,32768 -r 3..5 -fa 1 -ngl 99` (llama.cpp; DeepSeek GGUFs need a DeepSeek-V4.1-capable build) on one Mac Studio M3 Ultra 512 GB, idle unless noted. "Gen" = single-stream decode tok/s at short context and at 32k context. Rows marked *(2-3 Macs)* do not fit one 512 GB machine and were split with llama.cpp RPC over Thunderbolt TCP — the split itself costs a lot of speed, so those numbers understate a single big machine.
+
+| Model / quant | Size | Gen tok/s (short) | Gen tok/s (32k) | Prompt tok/s | SWE-bench Verified 100 |
+|---|---|---|---|---|---|
+| Qwen3.8-Flash-Next abl v2, MLX mixed 4/8-bit + MTP drafting | 109 GB | **56.2** | 42.7 | ~1000 | 80 |
+| DeepSeek-V4.1-Flash abl, MLX | 394 GB | **54.8** | 49.7 | 930 | 80 |
+| Qwen3.8-Flash-Next abl v2, Swift IQ3_XXS | 71 GB | **47.7** | 44.8 | 888 | running |
+| Qwen3.8-Flash-Next abl v2, Swift IQ3_S | 78 GB | **47.0** | 44.1 | 885 | queued |
+| Qwen3.8-Flash-Next abl v2, UD-Q4_K_XL | 104 GB | **42.6** | 40.4 | 887 | queued |
+| Qwen3.8-Flash-Next abl v2, Q8_0 | 188 GB | **41.8** | 39.7 | 911 | **82** |
+| Qwen3.8-Flash-Next abl v2, Swift IQ2_XS / UD-Q4_K_XL-V2 / Q6_K_XL / IQ4_XS / Q5_K_XL ¹ | 63–158 GB | 31–41 | 30–46 | 767–881 | — |
+| DeepSeek-V4.1-Flash abl, Q2_K / Q4_K_M / Q8_0 / Q3_K_M | 246–473 GB | 24.9–29.3 | 13.0–14.6 | 114–123 | — |
+| DeepSeek-V4.1-Flash heretic, Q8_0 | 473 GB | 26.0 | 13.5 | 116 | — |
+| Ling-3.1-flash abl, Q3_K_M / Q6_K | 253–438 GB | 21.5 / 19.3 | 18.0 / 16.5 | 251 / 253 | 11/15 partial |
+| GLM-5.3 Uncensored, Q4_K_M / Q2_K / Q3_K_M | 294–423 GB | 18.8 / 12.6 / 11.6 | 10–15 | 131–134 | — |
+| Ling-3.1-flash abl, Q8_0 / Q4_K_M *(2 Macs)* | 322–567 GB | 15.4 / 12.6 | 14.3 / 11.9 ² | 255–268 | — |
+| GLM-5.3 Uncensored, Q6_K / Q8_0 *(3 Macs)* | 605–769 GB | 9.2 / 7.4 | 8.6 / 7.0 ² | 168–174 | — |
+| DeepSeek-V4.1-Flash heretic, Q6_K | 426 GB | 9.1 | 6.9 | 108 | — |
+| MiniMax-M3.1-Flash abl, UD-Q8_K_XL | 274 GB | 8.7 | 7.4 | 59 | — |
+| Kimi K3 uncensored, IQ1_S *(3 Macs)* | 580 GB | 6.3 | 5.5 ² | 70 | — |
+
+¹ measured with background load on the machine; probably ~25% low. ² at 21k context, not 32k.
+
+What we learned:
+- **Only Qwen3.8-Flash-Next and DeepSeek-V4.1 (MLX) clear 41 tok/s** on one Mac Studio; every GLM-5.3, Ling-3.1, MiniMax-M3.1 and Kimi K3 quant is far below at every bit width.
+- **Lower bits are not always faster.** DeepSeek's "Q8_0" files keep the experts in MXFP4, so they run like Q4; a Q6_K build of the same model ran at a third of the speed because Q6_K takes a slow Metal path.
+- **Batching vs one request per machine:** on the same 4 Mac Studios, a SWE-bench run with 4 concurrent tasks per Mac and one with 1 task per Mac finished tasks at the same rate (73 vs 74 tasks done after ~4h15m) — total throughput is set by memory bandwidth. But each request decoded **~3.3x faster** with one task per Mac (30.7 vs 9.2 tok/s on replies ≥500 tokens). For interactive users, serve one request per machine.
+- **Refusals:** the Swift IQ3_XXS and IQ3_S builds answered 24/24 harmful-request prompts (0 refusals), same as the Q8 and MLX builds.
 
 ## How each number was measured
 
@@ -125,6 +159,34 @@ Other findings in the table: 1-bit and 2-bit giant MoEs (Kimi K3 Q1_0 at 2.3 tok
 | 72 | Qwen2.5 14B (ollama qwen2.5:14b) |  |  |  | ollama on T4s | ~15 per card (~45 total) |  |  |  |  |  |  |  |  | 2026-08-25 |
 | 73 | Llama 3.1 8B (ollama llama3.1:8b) |  |  |  | ollama on T4s | 30.8 one card; 71.4 total |  |  |  |  |  |  |  |  | 2026-08-25 |
 | 74 | Qwen3-14B abliterated | ollama richardyoung/qwen3-14b-abliterated | q4_K_M |  | ollama on T4s | 28.7 total |  |  |  |  |  |  |  |  | 2026-08-25 |
+| 75 | Qwen3.8-Flash-Next abliterated v2 - optimized candidate4 |  | Q8_0 GGUF |  | Mac Studio (M3 Ultra 512 GB), llama.cpp candidate4, 4 slots x 262144 | 41.77±0.04 @0, 39.69 @32k (stock 08c252e, idle); optimized candidate4 ~42-43 tg, pp +20% | 911 / 826 (pp2048 @0 / @32k) | 0/24 harmful battery (2026-11-20) | A: 82/100 (SWE-bench Verified subset100, network off, 0 errors) |  |  |  |  | best of the optimized runs so far | 2026-11-20 |
+| 76 | DeepSeek-V4.1-Flash abliterated - optimized candidate3 |  | MLX |  | Mac Studio (M3 Ultra 512 GB), mlx-serve, 4 concurrent x 262144 | 54.77±4.48 @0, 49.65±3.50 @32k (mlx-serve, idle) | 930 / 1046 |  | A: 80/100 (SWE-bench Verified subset100, network off, 0 errors) |  |  |  |  |  | 2026-11-20 |
+| 77 | Ling-3.1-Flash-1019 abliterated - optimized candidate3 |  | Q6_K GGUF |  | Mac Studio (M3 Ultra 512 GB), llama.cpp candidate3, 2 slots x 262144 | 19.25±0.05 @0, 16.54 @32k (stock 08c252e, idle); candidate3 21.56 @0 | 253 / 141 |  | PARTIAL 11/15 (73%); run stopped at 15/100 after 16.5 h (~1 task/hour). Same 15 tasks: Qwen opt 14/15, DeepSeek MLX opt 14/15 |  |  |  |  | dropped: slower and weaker than Qwen/DeepSeek on the same tasks | 2026-11-20 |
+| 78 | Qwen3.8-Flash-Next abliterated v2 - MLX mixed 4/8-bit (bydlosoft), optimization lane candidate12 | bydlosoft (MLX repack of huihui-ai v2) | MLX mixed: routed experts 4-bit g64, rest 8-bit | 109 GB | 4x Mac Studio M3 Ultra 512 GB, mlx-vlm 0.8.0, candidate12 (MTP drafter bs4 + PLE GPU row store + APC) + thinking ON; 4 slots x 262144 per Mac, 16 workers via sticky front | 56.2 single-stream @2k (42.7@32k, 25.9@131k, 18.3@262k); live SWE 4-14 per request under 4-up load | ~930-1140 | 0/24 harmful-prompt battery (same as Q8 GGUF) | A: 80/100 (SWE-bench Verified subset100, network off, 0 empty, 0 errors); 94/100 per-instance agreement with the Q8 82/100 run (78 both pass, 16 both fail, +2 MLX-only, +4 Q8-only); temp 0.8 sampling both runs |  |  |  | wall 20:23-04:38 ET (~8h15m agent time) on 4 Macs; front router imbalance found (900 s live window) | 80 < 82 gate (within sampling noise); 1-per-Mac rerun (stage 2) gives a second sample | 2026-11-21 |
+| 79 | Kimi K3 abliterated (Ryanchen911 Kimi-K3-Uncensored) | Ryanchen911 | IQ1_S-XS GGUF (34 parts) | 579.5 GB | 3x Mac Studio M3 Ultra 512 GB split via llama.cpp RPC over Thunderbolt TCP (K3 fork 05a66933f, -ts 80,80,420: Mac Studio, Mac Studio, Mac Studio main); RDMA disabled | 6.3 @2k ctx, 5.5 @21k ctx (single stream, temp 1.0) | 70 @1.5k, 76 @21k |  | not run (fails speed gate) |  |  |  | single-Mac 2026-10-18 (memory-starved): 1.81 t/s; REAP-pruned 478 GB single-Mac: 2.78 t/s | below 22 t/s - archived 2026-11-21 | 2026-11-21 |
+| 80 | Qwen3.8-Flash-Next abliterated v2 | huihui-ai (unsloth quants) | UD-IQ4_XS GGUF | 87.2 GiB | Mac Studio M3 Ultra 512 GB, llama-bench 08c252e -p 2048 -n 128 -d 0,32768 -r 3 -fa 1 -ngl 99; Mac Studio NOT idle (screen sharing ~20% CPU + WindowServer 40%; old 242 GB Q8 server resident but idle) | 33.1 @0, 39.1 @32k | 778 / 711 (pp2048 @0 / @32k) |  | not run |  |  |  | reference speed table 2026-11-21 (full speed screen of every quant) | reference | 2026-11-21 |
+| 81 | Qwen3.8-Flash-Next abliterated v2 | huihui-ai (unsloth quants) | UD-Q4_K_XL GGUF | 103.7 GiB | Mac Studio M3 Ultra 512 GB IDLE, llama-bench 08c252e -p 2048 -n 128 -d 0,32768 -r 5 -fa 1 -ngl 99 (re-measured 2026-11-21; first Mac Studio numbers were contaminated by a live llama-server + screen sharing) | 42.57±0.06 @0, 40.38 @32k | 887 / 807 (pp2048 @0 / @32k) |  | not run |  |  |  | reference speed table 2026-11-21 (full speed screen of every quant) | clears 41 t/s gate | 2026-11-21 |
+| 82 | Qwen3.8-Flash-Next abliterated v2 | huihui-ai (unsloth quants) | UD-Q4_K_XL-V2 GGUF | 103.7 GiB | Mac Studio M3 Ultra 512 GB, llama-bench 08c252e -p 2048 -n 128 -d 0,32768 -r 3 -fa 1 -ngl 99; Mac Studio NOT idle (screen sharing ~20% CPU + WindowServer 40%; old 242 GB Q8 server resident but idle) | 40.1 @0, 31.8±7 @32k | 881 / 694 (pp2048 @0 / @32k) |  | not run |  |  |  | reference speed table 2026-11-21 (full speed screen of every quant) | reference | 2026-11-21 |
+| 83 | Qwen3.8-Flash-Next abliterated v2 | huihui-ai (unsloth quants) | UD-Q5_K_XL GGUF | 147.4 GiB | Mac Studio M3 Ultra 512 GB, llama-bench 08c252e -p 2048 -n 128 -d 0,32768 -r 3 -fa 1 -ngl 99; Mac Studio NOT idle (screen sharing ~20% CPU + WindowServer 40%; old 242 GB Q8 server resident but idle) | 31.6±9 @0, 29.6 @32k | 864 / 691 (pp2048 @0 / @32k) |  | not run |  |  |  | reference speed table 2026-11-21 (full speed screen of every quant) | reference | 2026-11-21 |
+| 84 | Qwen3.8-Flash-Next abliterated v2 | huihui-ai (unsloth quants) | UD-Q6_K_XL GGUF | 157.5 GiB | Mac Studio M3 Ultra 512 GB, llama-bench 08c252e -p 2048 -n 128 -d 0,32768 -r 3 -fa 1 -ngl 99; Mac Studio NOT idle (screen sharing ~20% CPU + WindowServer 40%; old 242 GB Q8 server resident but idle) | 35.4±5 @0, 40.1 @32k | 767 / 741 (pp2048 @0 / @32k) |  | not run |  |  |  | reference speed table 2026-11-21 (full speed screen of every quant) | reference | 2026-11-21 |
+| 85 | GLM-5.3 Uncensored (softwareweaver) | softwareweaver | Q8_0-BF16-MTP GGUF | 769 GB | 3 Macs RPC over TB TCP (Mac Studio,Mac Studio,Mac Studio -ts 165,165,440), llama-server probe | 7.4 @2k, 7.0 @21k | 174-187 / 168 |  | not run |  |  |  | reference speed table 2026-11-21 (full speed screen of every quant) | below 22 t/s - archived 2026-11-21 | 2026-11-21 |
+| 86 | GLM-5.3 Uncensored (softwareweaver) | softwareweaver | Q6_K-BF16-MTP GGUF | 605 GB | 3 Macs RPC (-ts 85,85,440), llama-server probe | 9.2 @2k, 8.6 @21k | 168-171 / 133 |  | not run |  |  |  | reference speed table 2026-11-21 (full speed screen of every quant) | below 22 t/s - archived 2026-11-21 | 2026-11-21 |
+| 87 | GLM-5.3 Uncensored (softwareweaver) | softwareweaver | Q3_K_M-BF16-MTP GGUF | 370 GiB | Mac Studio M3 Ultra 512 GB single-Mac, llama-bench -p 2048 -n 128 -d 0,32768 -r 3 -fa 1 -ngl 99, Mac Studio idle, build 08c252e | 11.6 @0, 10.2 @32k | 131 / 91 |  | not run |  |  |  | reference speed table 2026-11-21 (full speed screen of every quant) | below 22 t/s - archived 2026-11-21 | 2026-11-21 |
+| 88 | GLM-5.3 Uncensored (softwareweaver) | softwareweaver | Q2_K-BF16-MTP GGUF | 294 GiB | Mac Studio M3 Ultra 512 GB single-Mac, llama-bench -p 2048 -n 128 -d 0,32768 -r 3 -fa 1 -ngl 99, Mac Studio idle, build 08c252e | 12.6 @0, 10.9 @32k | 134 / 93 |  | not run |  |  |  | reference speed table 2026-11-21 (full speed screen of every quant) | below 22 t/s - archived 2026-11-21 | 2026-11-21 |
+| 89 | Ling-3.1-flash-1019 abliterated (mrfakename) | mrfakename | Q8_0 GGUF | 567 GB | 2 Macs RPC (Mac Studio,Mac Studio -ts 130,440), llama-server probe | 15.4 @2k, 14.3 @21k | 268-271 / 242 |  | not run |  |  |  | reference speed table 2026-11-21 (full speed screen of every quant) | below 22 t/s - archived 2026-11-21 | 2026-11-21 |
+| 90 | Ling-3.1-flash-1019 abliterated (mrfakename) | mrfakename | Q4_K_M GGUF | 322 GB | 2 Macs RPC (Mac Studio main + Mac Studio worker -ts 230,100), llama-server probe; split penalty | 12.6 @2k, 11.9 @21k | 255-265 / 231 |  | not run |  |  |  | reference speed table 2026-11-21 (full speed screen of every quant) | below 22 t/s - archived 2026-11-21 | 2026-11-21 |
+| 91 | Ling-3.1-flash-1019 abliterated (mrfakename) | mrfakename | Q3_K_M GGUF | 253 GiB | Mac Studio M3 Ultra 512 GB single-Mac, llama-bench -p 2048 -n 128 -d 0,32768 -r 3 -fa 1 -ngl 99, Mac Studio idle, build 08c252e | 21.5 @0, 18.0 @32k | 251 / 152 |  | not run |  |  |  | reference speed table 2026-11-21 (full speed screen of every quant) | below 22 t/s - archived 2026-11-21 | 2026-11-21 |
+| 92 | DeepSeek-V4.1-Flash-1017 abliterated (mrfakename) | mrfakename | Q8_0 GGUF (MXFP4 experts) | 473 GiB | Mac Studio M3 Ultra 512 GB single-Mac, llama-bench -p 2048 -n 128 -d 0,32768 -r 3 -fa 1 -ngl 99, Mac Studio idle, vcruz build 5210c7c | 26.3 @0, 13.4 @32k | 121 / 57 |  | not run |  |  |  | reference speed table 2026-11-21 (full speed screen of every quant) | below 41 t/s gate | 2026-11-21 |
+| 93 | DeepSeek-V4.1-Flash-1017 abliterated (mrfakename) | mrfakename | Q3_K_M GGUF | 323 GiB | Mac Studio M3 Ultra 512 GB single-Mac, llama-bench -p 2048 -n 128 -d 0,32768 -r 3 -fa 1 -ngl 99, Mac Studio idle, vcruz build 5210c7c | 24.9 @0, 13.0 @32k | 122 / 60 |  | not run |  |  |  | reference speed table 2026-11-21 (full speed screen of every quant) | below 41 t/s gate | 2026-11-21 |
+| 94 | DeepSeek-V4.1-Flash-1017 abliterated (mrfakename) | mrfakename | Q2_K GGUF | 246 GiB | Mac Studio M3 Ultra 512 GB single-Mac, llama-bench -p 2048 -n 128 -d 0,32768 -r 3 -fa 1 -ngl 99, Mac Studio idle, vcruz build 5210c7c | 29.3 @0, 14.6 @32k | 123 / 62 |  | not run |  |  |  | reference speed table 2026-11-21 (full speed screen of every quant) | below 41 t/s gate | 2026-11-21 |
+| 95 | DeepSeek-V4.1-Flash-1017 heretic (pqhaz) | pqhaz | Q8_0 GGUF (MXFP4 experts) | 473 GiB | Mac Studio M3 Ultra 512 GB single-Mac, llama-bench -p 2048 -n 128 -d 0,32768 -r 3 -fa 1 -ngl 99, Mac Studio idle, vcruz build 5210c7c | 26.0 @0, 13.5 @32k | 116 / 56 |  | not run |  |  |  | reference speed table 2026-11-21 (full speed screen of every quant) | below 41 t/s gate | 2026-11-21 |
+| 96 | Qwen3.8-Flash-Next abliterated v2 swift GSQ-RCO |  | IQ3_XXS GGUF | 70.7 GiB | Mac Studio M3 Ultra 512 GB IDLE, llama-bench 08c252e -p 2048 -n 128 -d 0,32768 -r 5 -fa 1 -ngl 99 (re-measured 2026-11-21; first Mac Studio numbers were contaminated by a live llama-server + screen sharing) | 47.65±0.09 @0, 44.83 @32k | 888 / 806 (pp2048 @0 / @32k) | 0/24 harmful battery | not run |  |  |  | reference speed table 2026-11-21 (full speed screen of every quant) | clears 41 t/s gate | 2026-11-21 |
+| 97 | Qwen3.8-Flash-Next abliterated v2 swift GSQ-RCO |  | IQ3_S GGUF | 78.0 GiB | Mac Studio M3 Ultra 512 GB IDLE, llama-bench 08c252e -p 2048 -n 128 -d 0,32768 -r 5 -fa 1 -ngl 99 (re-measured 2026-11-21; first Mac Studio numbers were contaminated by a live llama-server + screen sharing) | 46.96±0.06 @0, 44.14 @32k | 885 / 806 (pp2048 @0 / @32k) | 0/24 harmful battery | not run |  |  |  | reference speed table 2026-11-21 (full speed screen of every quant) | clears 41 t/s gate | 2026-11-21 |
+| 98 | Qwen3.8-Flash-Next abliterated v2 swift GSQ-RCO |  | IQ2_XS GGUF | 63.5 GiB | Mac Studio single-Mac llama-bench 08c252e | 40.8±6.8 @0, 45.5 @32k | 785 / 812 |  | not run |  |  |  | reference speed table 2026-11-21 (full speed screen of every quant) | below 41 t/s gate | 2026-11-21 |
+| 99 | GLM-5.3 Uncensored (softwareweaver) | softwareweaver | Q4_K_M GGUF | 423 GB | Mac Studio M3 Ultra 512 GB single-Mac, llama-bench -p 2048 -n 128 -d 0,32768 -r 3 -fa 1 -ngl 99, idle (2026-11-19 accuracy table) | 18.77±0.02 @0, 15.44 @32k | 133 / 87 (pp2048 @0 / @32k) |  | not run |  |  |  |  | below 22 t/s - archived 2026-11-21 | 2026-11-19 |
+| 100 | DeepSeek-V4.1-Flash-1017 abliterated (mrfakename) | mrfakename | Q4_K_M GGUF | 415 GB | Mac Studio M3 Ultra 512 GB single-Mac, llama-bench -p 2048 -n 128 -d 0,32768 -r 3 -fa 1 -ngl 99, idle (2026-11-19 accuracy table) | 28.64±0.02 @0, 14.28 @32k (vcruz build 5210c7c) | 114 / 58 (pp2048 @0 / @32k) |  | not run |  |  |  |  | below 41 t/s gate | 2026-11-19 |
+| 101 | DeepSeek-V4.1-Flash-1017 heretic (pqhaz) | pqhaz | Q6_K GGUF | 426 GB | Mac Studio M3 Ultra 512 GB single-Mac, llama-bench -p 2048 -n 128 -d 0,32768 -r 3 -fa 1 -ngl 99, idle (2026-11-19 accuracy table) | 9.06±0.02 @0, 6.85 @32k (Q6_K takes a slow Metal path; heretic Q8/MXFP4 = 26.0) | 108 / 47 (pp2048 @0 / @32k) |  | not run |  |  |  |  | below 22 t/s - archived 2026-11-21 | 2026-11-19 |
+| 102 | MiniMax-M3.1-Flash abliterated (operationrange) | operationrange | UD-Q8_K_XL GGUF | 274 GB | Mac Studio M3 Ultra 512 GB single-Mac, llama-bench -p 2048 -n 128 -d 0,32768 -r 3 -fa 1 -ngl 99, idle (2026-11-19 accuracy table) | 8.66±0.01 @0, 7.42 @32k (llama.cpp PR #31192 build) | 59 / 52 (pp2048 @0 / @32k) |  | not run |  |  |  |  | below 22 t/s - archived 2026-11-21 | 2026-11-19 |
 
 ## Cite
 
@@ -142,5 +204,5 @@ Corrections and new results welcome — open an issue or PR. Model names, quant 
 ## More from truthprotectors
 
 - **[TC Mini](https://github.com/truthprotectors/TC-Mini)** — private AI that runs entirely on your phone or PC (WebGPU in the browser, or Ollama / LM Studio). [Open it now](https://truthprotectors.github.io/TC-Mini/app/) · [weights](https://huggingface.co/truthcoder/TC-Mini)
-- **[Abliterated LLM Benchmarks](https://github.com/truthprotectors/abliterated-llm-benchmarks)** — 74 open-weight models and quants on SWE-bench Verified, refusals and speed · [dataset](https://huggingface.co/datasets/truthcoder/abliterated-llm-benchmarks)
+- **[Abliterated LLM Benchmarks](https://github.com/truthprotectors/abliterated-llm-benchmarks)** — 102 open-weight models and quants on SWE-bench Verified, refusals and speed · [dataset](https://huggingface.co/datasets/truthcoder/abliterated-llm-benchmarks)
 - **[Claude-clone UI/UX](https://github.com/truthprotectors/Claude-clone-UI-UX)** — open-source Claude-style chat UI for AI coding agents
